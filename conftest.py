@@ -1,7 +1,9 @@
+# conftest.py
 import pytest
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from pages.header import Header
+from pages.home_page import HomePage  # <-- должен существовать такой файл/класс
 import os
 
 BASE_URL = "https://www.demoblaze.com/"
@@ -11,7 +13,6 @@ BASE_URL = "https://www.demoblaze.com/"
 def driver(request):
     options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
-    # Для headless-режима в CI раскомментируйте:
     # options.add_argument("--headless=new")
 
     driver = webdriver.Chrome(service=Service(), options=options)
@@ -27,8 +28,18 @@ def page_objects(driver):
     }
 
 
+@pytest.fixture(scope="function")
+def home_page(driver):
+    page = HomePage(driver, base_url=BASE_URL)
+    page.open()  # если у вас есть метод open(), который делает driver.get(base_url)
+    return page
+
+
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_makereport(item, call, report):
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    report = outcome.get_result()
+
     if report.when == "call" and report.failed:
         driver = item.funcargs.get("driver")
         if driver:
@@ -36,5 +47,3 @@ def pytest_runtest_makereport(item, call, report):
             os.makedirs(screenshot_dir, exist_ok=True)
             path = os.path.join(screenshot_dir, f"{item.name}.png")
             driver.save_screenshot(path)
-            # Allure подхватит скриншот из папки allure-results при аттаче,
-            # но здесь мы просто сохраняем локально
