@@ -1,9 +1,8 @@
-# conftest.py
 import pytest
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from pages.header import Header
-from pages.home_page import HomePage  # <-- должен существовать такой файл/класс
+from pages.home_page import HomePage
 import os
 
 BASE_URL = "https://www.demoblaze.com/"
