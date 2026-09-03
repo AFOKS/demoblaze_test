@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'python'
+    }
 
     parameters {
         choice(
@@ -35,16 +37,12 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Setup Python') {
             steps {
                 sh '''
+                    python3 --version
                     python3 -m venv .venv
+
                     . .venv/bin/activate
 
                     python -m pip install --upgrade pip
@@ -55,7 +53,6 @@ pipeline {
 
         stage('Run tests') {
             steps {
-
                 withCredentials([
                     string(
                         credentialsId: 'selenoid-login',
@@ -70,7 +67,6 @@ pipeline {
                         variable: 'SELENOID_URL'
                     )
                 ]) {
-
                     sh '''
                         . .venv/bin/activate
 
