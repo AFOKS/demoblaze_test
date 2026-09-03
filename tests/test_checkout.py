@@ -1,74 +1,82 @@
+import allure
 import pytest
 from selenium.common.exceptions import TimeoutException
 
 
+@allure.epic("Demoblaze")
+@allure.feature("Оформление заказа")
 class TestCheckout:
-    """Тесты оформления заказа"""
 
+    @allure.story("Успешное оформление")
+    @allure.title("CH01: Успешное оформление заказа")
     def test_checkout_success(self, home_page):
-        """CH01: Успешное оформление заказа"""
-        product_page = home_page.select_product(0)
-        product_page.add_to_cart()
+        with allure.step("Добавить товар в корзину"):
+            product_page = home_page.select_product(0)
+            product_page.add_to_cart()
 
-        cart_page = home_page.go_to_cart()
-        checkout_page = cart_page.go_to_checkout()
+        with allure.step("Перейти в корзину и открыть форму заказа"):
+            cart_page = home_page.go_to_cart()
+            checkout_page = cart_page.go_to_checkout()
 
-        checkout_page.fill_checkout_form(
-            name="John Doe",
-            country="Latvia",
-            city="Riga",
-            card="4111111111111111",
-            month="12",
-            year="2026"
-        )
-        checkout_page.purchase()
+        with allure.step("Заполнить форму заказа валидными данными"):
+            checkout_page.fill_checkout_form(
+                name="John Doe", country="Latvia", city="Riga",
+                card="4111111111111111", month="12", year="2026"
+            )
 
-        message = checkout_page.get_success_message()
-        assert "Thank you for your purchase!" in message, f"Ожидалось подтверждение заказа, получено: {message}"
+        with allure.step("Оформить заказ"):
+            checkout_page.purchase()
 
+        with allure.step("Проверить сообщение об успешном заказе"):
+            message = checkout_page.get_success_message()
+            assert "Thank you for your purchase!" in message, f"Ожидалось подтверждение заказа, получено: {message}"
+
+    @allure.story("Негативные сценарии оформления")
+    @allure.title("CH02: Оформление заказа с пустыми полями")
     def test_checkout_with_empty_fields(self, home_page):
-        """CH02: Оформление заказа с пустыми полями (негативный тест)"""
-        product_page = home_page.select_product(0)
-        product_page.add_to_cart()
+        with allure.step("Добавить товар в корзину"):
+            product_page = home_page.select_product(0)
+            product_page.add_to_cart()
 
-        cart_page = home_page.go_to_cart()
-        checkout_page = cart_page.go_to_checkout()
+        with allure.step("Перейти в корзину и открыть форму заказа"):
+            cart_page = home_page.go_to_cart()
+            checkout_page = cart_page.go_to_checkout()
 
-        checkout_page.fill_checkout_form(
-            name="", country="", city="", card="", month="", year=""
-        )
-        checkout_page.purchase()
+        with allure.step("Оставить все поля пустыми и попытаться оформить заказ"):
+            checkout_page.fill_checkout_form(name="", country="", city="", card="", month="", year="")
+            checkout_page.purchase()
 
-        try:
-            message = checkout_page.get_success_message(timeout=5)
-            assert "Thank you for your purchase!" not in message, "Заказ оформился с пустыми полями"
-        except TimeoutException:
-            # Ожидаемое поведение — сообщение об успехе не появилось
-            pass
+        with allure.step("Проверить, что заказ не оформился"):
+            try:
+                message = checkout_page.get_success_message(timeout=5)
+                assert "Thank you for your purchase!" not in message, "Заказ оформился с пустыми полями"
+            except TimeoutException:
+                pass  # ожидаемое поведение
 
+    @allure.story("Негативные сценарии оформления")
+    @allure.title("CH03: Оформление заказа с невалидной картой")
     @pytest.mark.xfail(
         reason="Demoblaze не валидирует формат карты/срок действия — заказ всё равно оформляется"
     )
     def test_checkout_invalid_card(self, home_page):
-        """CH03: Оформление заказа с невалидной картой (негативный тест)"""
-        product_page = home_page.select_product(0)
-        product_page.add_to_cart()
+        with allure.step("Добавить товар в корзину"):
+            product_page = home_page.select_product(0)
+            product_page.add_to_cart()
 
-        cart_page = home_page.go_to_cart()
-        checkout_page = cart_page.go_to_checkout()
+        with allure.step("Перейти в корзину и открыть форму заказа"):
+            cart_page = home_page.go_to_cart()
+            checkout_page = cart_page.go_to_checkout()
 
-        checkout_page.fill_checkout_form(
-            name="John Doe",
-            country="Latvia",
-            city="Riga",
-            card="1234567890123456",
-            month="13",
-            year="2020"
-        )
-        checkout_page.purchase()
+        with allure.step("Заполнить форму невалидными данными карты"):
+            checkout_page.fill_checkout_form(
+                name="John Doe", country="Latvia", city="Riga",
+                card="1234567890123456", month="13", year="2020"
+            )
+            checkout_page.purchase()
 
-        try:
-            message = checkout_page.get_success_message(timeout=5)
-            assert "Thank you for your purchase!" not in message, "Заказ оформился с невалидной картой"
-        except TimeoutException:
-            pass
+        with allure.step("Проверить, что заказ не оформился"):
+            try:
+                message = checkout_page.get_success_message(timeout=5)
+                assert "Thank you for your purchase!" not in message, "Заказ оформился с невалидной картой"
+            except TimeoutException:
+                pass

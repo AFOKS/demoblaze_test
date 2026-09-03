@@ -1,5 +1,10 @@
+import allure
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 from .base_page import BasePage
+
 
 class CheckoutPage(BasePage):
     LOCATORS = {
@@ -9,24 +14,33 @@ class CheckoutPage(BasePage):
         "card": (By.ID, "card"),
         "month": (By.ID, "month"),
         "year": (By.ID, "year"),
-        "purchase_btn": (By.CSS_SELECTOR, "button[data-qa='purchase']"),
-        "success_message": (By.CSS_SELECTOR, ".sweet-alert .sweet-alert-success, .sweet-alert p"),
+        "purchase_btn": (By.XPATH, "//button[contains(text(), 'Purchase')]"),
+        "success_message": (By.CSS_SELECTOR, ".sweet-alert h2"),
     }
 
-    def fill_checkout(self, name, country, city, card, month, year):
-        fields = {
-            "name": name,
-            "country": country,
-            "city": city,
-            "card": card,
-            "month": month,
-            "year": year,
+    @allure.step("Заполнить форму заказа")
+    def fill_checkout_form(self, name, country, city, card, month, year):
+        values = {
+            "name": name, "country": country, "city": city,
+            "card": card, "month": month, "year": year,
         }
-        for key, value in fields.items():
-            self.driver.find_element(*self.LOCATORS[key]).send_keys(value)
+        for field, value in values.items():
+            el = self.driver.find_element(*self.LOCATORS[field])
+            el.clear()
+            el.send_keys(value)
 
+    @allure.step("Нажать 'Purchase'")
     def purchase(self):
         self.click(self.LOCATORS["purchase_btn"])
+        try:
+            WebDriverWait(self.driver, 3).until(EC.alert_is_present())
+            self.driver.switch_to.alert.accept()
+        except TimeoutException:
+            pass
 
-    def get_success_message(self):
-        return self.find(self.LOCATORS["success_message"]).text.strip()
+    @allure.step("Получить сообщение об успешном заказе")
+    def get_success_message(self, timeout: int = 10) -> str:
+        message_el = WebDriverWait(self.driver, timeout).until(
+            EC.visibility_of_element_located(self.LOCATORS["success_message"])
+        )
+        return message_el.text.strip()
