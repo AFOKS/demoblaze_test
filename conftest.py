@@ -31,7 +31,7 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "--browser-version",
-        default="120.0",
+        default="148.0",
         help="Версия браузера в Selenoid"
     )
     parser.addoption(
