@@ -7,35 +7,34 @@ pipeline {
             choices: ['chrome', 'firefox'],
             description: 'Браузер для запуска тестов'
         )
+
         string(
             name: 'BROWSER_VERSION',
             defaultValue: '120.0',
             description: 'Версия браузера в Selenoid'
         )
+
         string(
             name: 'RESOLUTION',
             defaultValue: '1920x1080',
             description: 'Разрешение экрана браузера'
         )
+
         string(
             name: 'SITE_URL',
             defaultValue: 'https://www.demoblaze.com/',
             description: 'URL тестируемого сайта'
         )
+
         string(
             name: 'TEST_PATH',
             defaultValue: 'tests/',
-            description: 'Путь до тестов, которые нужно запустить'
+            description: 'Путь до тестов'
         )
     }
 
-    environment {
-        SELENOID_LOGIN    = credentials('selenoid-login')     // Secret text credential
-        SELENOID_PASSWORD = credentials('selenoid-password')  // Secret text credential
-        SELENOID_URL      = credentials('selenoid-host-url')  // Secret text credential
-    }
-
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -47,7 +46,8 @@ pipeline {
                 sh '''
                     python3 -m venv .venv
                     . .venv/bin/activate
-                    pip install --upgrade pip
+
+                    python -m pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
             }
@@ -55,28 +55,55 @@ pipeline {
 
         stage('Run tests') {
             steps {
-                sh '''
-                    . .venv/bin/activate
-                    pytest ${TEST_PATH} \
-                        --browser=${BROWSER} \
-                        --browser-version=${BROWSER_VERSION} \
-                        --resolution=${RESOLUTION} \
-                        --site-url=${SITE_URL} \
-                        --alluredir=allure-results \
-                        -v
-                '''
+
+                withCredentials([
+                    string(
+                        credentialsId: 'selenoid-login',
+                        variable: 'SELENOID_LOGIN'
+                    ),
+                    string(
+                        credentialsId: 'selenoid-password',
+                        variable: 'SELENOID_PASSWORD'
+                    ),
+                    string(
+                        credentialsId: 'selenoid-host-url',
+                        variable: 'SELENOID_URL'
+                    )
+                ]) {
+
+                    sh '''
+                        . .venv/bin/activate
+
+                        python -m pytest ${TEST_PATH} \
+                            --browser=${BROWSER} \
+                            --browser-version=${BROWSER_VERSION} \
+                            --resolution=${RESOLUTION} \
+                            --site-url=${SITE_URL} \
+                            --alluredir=allure-results \
+                            -v
+                    '''
+                }
             }
         }
     }
 
     post {
         always {
-            allure includeProperties: false,
-                   jdk: '',
-                   results: [[path: 'allure-results']]
+            script {
+                if (fileExists('allure-results')) {
+                    allure(
+                        includeProperties: false,
+                        jdk: '',
+                        results: [[path: 'allure-results']]
+                    )
+                } else {
+                    echo 'allure-results не найден — тесты не запускались или не создали результаты.'
+                }
+            }
         }
+
         failure {
-            echo 'Тесты упали — детали смотрите в Allure-отчёте job\'а.'
+            echo 'Сборка завершилась с ошибкой. Проверь Console Output.'
         }
     }
 }
