@@ -10,7 +10,7 @@ pipeline {
 
         string(
             name: 'BROWSER_VERSION',
-            defaultValue: '120.0',
+            defaultValue: '148.0',
             description: 'Версия браузера в Selenoid'
         )
 
