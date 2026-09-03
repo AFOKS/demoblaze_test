@@ -15,7 +15,7 @@ def driver(request):
     # options.add_argument("--headless=new")
 
     driver = webdriver.Chrome(service=Service(), options=options)
-    driver.implicitly_wait(10)
+    #driver.implicitly_wait(10)
     yield driver
     driver.quit()
 

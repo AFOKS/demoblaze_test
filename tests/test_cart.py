@@ -1,6 +1,6 @@
 import pytest
 
-@pytest.mark.allure("cart")
+
 class TestCart:
     """Тесты корзины"""
 

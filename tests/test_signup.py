@@ -1,70 +1,53 @@
-import pytest
 import random
 import string
-from pages.signup_page import SignUpPage
+from pages.signup_page import SignupPage
 
 
 def generate_random_username(length=8):
-    """Генерация случайного username"""
     return "test_" + ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
-@pytest.mark.allure("signup")
 class TestSignUp:
     """Тесты регистрации пользователя"""
 
     def test_signup_success(self, home_page):
         """SU01: Успешная регистрация нового пользователя"""
-        username = generate_random_username()
-        password = "password123"
-
         signup_page = home_page.go_to_signup()
-        signup_page.sign_up(username, password)
-        message = signup_page.get_success_message()
+        signup_page.sign_up(generate_random_username(), "password123")
 
-        assert "Sign up successful" in message, f"Ожидалось сообщение об успехе, получено: {message}"
+        alert_text = signup_page.get_alert_text_and_accept()
+        assert alert_text is not None, "Ожидался alert об успешной регистрации"
+        assert "sign up successful" in alert_text.lower(), f"Неожиданный текст: {alert_text}"
 
     def test_signup_with_special_characters(self, home_page):
         """SU02: Регистрация с цифрами и спецсимволами в пароле"""
-        username = generate_random_username()
-        password = "P@ssw0rd_2026!"
-
         signup_page = home_page.go_to_signup()
-        signup_page.sign_up(username, password)
-        message = signup_page.get_success_message()
+        signup_page.sign_up(generate_random_username(), "P@ssw0rd_2026!")
 
-        assert "Sign up successful" in message, "Регистрация с спецсимволами не удалась"
+        alert_text = signup_page.get_alert_text_and_accept()
+        assert alert_text is not None, "Ожидался alert об успешной регистрации"
+        assert "sign up successful" in alert_text.lower(), "Регистрация с спецсимволами не удалась"
 
     def test_signup_empty_username(self, home_page):
         """SU04: Регистрация без username (негативный тест)"""
-        username = ""
-        password = "password123"
-
         signup_page = home_page.go_to_signup()
-        signup_page.sign_up(username, password)
+        signup_page.sign_up("", "password123")
 
-        # Проверяем, что форма не отправилась или появилась ошибка
-        current_url = signup_page.driver.current_url
-        assert "index.html" in current_url, "Регистрация прошла с пустым username"
+        alert_text = signup_page.get_alert_text_and_accept()
+        assert alert_text is not None, "Ожидался alert о незаполненных полях"
 
     def test_signup_empty_password(self, home_page):
         """SU05: Регистрация без пароля (негативный тест)"""
-        username = generate_random_username()
-        password = ""
-
         signup_page = home_page.go_to_signup()
-        signup_page.sign_up(username, password)
+        signup_page.sign_up(generate_random_username(), "")
 
-        current_url = signup_page.driver.current_url
-        assert "index.html" in current_url, "Регистрация прошла с пустым паролем"
+        alert_text = signup_page.get_alert_text_and_accept()
+        assert alert_text is not None, "Ожидался alert о незаполненных полях"
 
     def test_signup_empty_both_fields(self, home_page):
         """SU06: Регистрация без username и пароля (негативный тест)"""
-        username = ""
-        password = ""
-
         signup_page = home_page.go_to_signup()
-        signup_page.sign_up(username, password)
+        signup_page.sign_up("", "")
 
-        current_url = signup_page.driver.current_url
-        assert "index.html" in current_url, "Регистрация прошла с пустыми полями"
+        alert_text = signup_page.get_alert_text_and_accept()
+        assert alert_text is not None, "Ожидался alert о незаполненных полях"
