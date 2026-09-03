@@ -1,24 +1,80 @@
+import os
 import allure
-from allure_commons.types import AttachmentType
+import requests
+from selenium.common.exceptions import WebDriverException
 
 
 def add_screenshot(driver):
-    png = driver.get_screenshot_as_png()
-    allure.attach(body=png, name='screenshot', attachment_type=AttachmentType.PNG, extension='.png')
-
-
-def add_console_logs(driver):
-    log = "".join(f'{text}\n' for text in driver.execute("getLog", {'type': 'browser'})['value'])
-    allure.attach(log, 'browser_logs', AttachmentType.TEXT, '.log')
+    """Прикладывает скриншот текущего состояния браузера в Allure."""
+    try:
+        allure.attach(
+            driver.get_screenshot_as_png(),
+            name="screenshot",
+            attachment_type=allure.attachment_type.PNG,
+        )
+    except WebDriverException:
+        pass
 
 
 def add_page_source(driver):
-    html = driver.page_source
-    allure.attach(html, 'page_source', AttachmentType.HTML, '.html')
+    """Прикладывает HTML-разметку страницы на момент завершения теста."""
+    try:
+        allure.attach(
+            driver.page_source,
+            name="page_source",
+            attachment_type=allure.attachment_type.HTML,
+        )
+    except WebDriverException:
+        pass
 
-def add_video(driver):
-    video_url = "https://selenoid.autotests.cloud/video/" + driver.session_id + ".mp4"
-    html = "<html><body><video width='100%' height='100%' controls autoplay><source src='" \
-           + video_url \
-           + "' type='video/mp4'></video></body></html>"
-    allure.attach(html, 'video_' + driver.session_id, AttachmentType.HTML, '.html')
+
+def add_console_logs(driver):
+    """Прикладывает логи консоли браузера (поддерживается не всеми браузерами)."""
+    try:
+        logs = driver.get_log("browser")
+        if logs:
+            logs_text = "\n".join(
+                f"[{entry['level']}] {entry['message']}" for entry in logs
+            )
+            allure.attach(
+                logs_text,
+                name="console_logs",
+                attachment_type=allure.attachment_type.TEXT,
+            )
+    except WebDriverException:
+        # Firefox и некоторые версии Selenoid не поддерживают get_log("browser")
+        pass
+
+
+def add_video(session_id: str):
+    """
+    Прикладывает видеозапись сессии из Selenoid.
+    Видео становится доступно только ПОСЛЕ завершения сессии (driver.quit()),
+    поэтому вызывать эту функцию нужно после quit(), передав сохранённый session_id.
+    """
+    login = os.getenv("SELENOID_LOGIN")
+    password = os.getenv("SELENOID_PASSWORD")
+    selenoid_host = os.getenv("SELENOID_URL", "")
+
+    selenoid_host = (
+        selenoid_host.removeprefix("https://")
+        .removeprefix("http://")
+        .removesuffix("/wd/hub")
+        .rstrip("/")
+    )
+
+    if not (login and password and selenoid_host and session_id):
+        return
+
+    video_url = f"https://{selenoid_host}/video/{session_id}.mp4"
+
+    try:
+        response = requests.get(video_url, auth=(login, password), timeout=30)
+        if response.status_code == 200 and response.content:
+            allure.attach(
+                response.content,
+                name="video",
+                attachment_type=allure.attachment_type.MP4,
+            )
+    except requests.RequestException:
+        pass
