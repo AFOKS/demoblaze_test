@@ -17,8 +17,12 @@ class LoginPage(BasePage):
 
     @allure.step("Войти с логином '{username}' и паролем '{password}'")
     def login(self, username: str, password: str):
-        self.driver.find_element(*self.LOCATORS["username"]).send_keys(username)
-        self.driver.find_element(*self.LOCATORS["password"]).send_keys(password)
+        username_el = self.wait.until(EC.visibility_of_element_located(self.LOCATORS["username"]))
+        username_el.send_keys(username)
+
+        password_el = self.wait.until(EC.visibility_of_element_located(self.LOCATORS["password"]))
+        password_el.send_keys(password)
+
         self.click(self.LOCATORS["submit"])
 
     @allure.step("Получить текст alert и закрыть его")
