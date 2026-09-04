@@ -1,8 +1,8 @@
 import allure
 from selenium.webdriver.common.by import By
 
-VALID_USERNAME = "testuser"
-VALID_PASSWORD = "password123"
+VALID_USERNAME = "test.test123"
+VALID_PASSWORD = "123456"
 
 
 @allure.epic("Demoblaze")
