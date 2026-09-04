@@ -26,6 +26,9 @@ class CartPage(BasePage):
 
     @allure.step("Получить текст суммы корзины")
     def get_total_text(self):
+        WebDriverWait(self.driver, 10).until(
+            lambda d: self.find(self.LOCATORS["total"]).text.strip() not in ("", "0")
+        )
         return self.find(self.LOCATORS["total"]).text.strip()
 
     @allure.step("Получить сумму корзины числом")
