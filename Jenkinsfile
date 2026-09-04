@@ -1,3 +1,5 @@
+# Попробовал сделать джобу через Jenkins файл - не получилось (
+
 pipeline {
     agent {
         label 'python'
