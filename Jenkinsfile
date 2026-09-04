@@ -51,34 +51,31 @@ pipeline {
             }
         }
 
+        stage('Prepare .env') {
+            steps {
+                sh '''
+                    cat > .env << 'EOF'
+SELENOID_LOGIN=ваш_логин
+SELENOID_PASSWORD=ваш_пароль
+SELENOID_URL=ваш_хост_selenoid
+EOF
+                '''
+            }
+        }
+
         stage('Run tests') {
             steps {
-                withCredentials([
-                    string(
-                        credentialsId: 'selenoid-login',
-                        variable: 'SELENOID_LOGIN'
-                    ),
-                    string(
-                        credentialsId: 'selenoid-password',
-                        variable: 'SELENOID_PASSWORD'
-                    ),
-                    string(
-                        credentialsId: 'selenoid-host-url',
-                        variable: 'SELENOID_URL'
-                    )
-                ]) {
-                    sh '''
-                        . .venv/bin/activate
+                sh '''
+                    . .venv/bin/activate
 
-                        python -m pytest ${TEST_PATH} \
-                            --browser=${BROWSER} \
-                            --browser-version=${BROWSER_VERSION} \
-                            --resolution=${RESOLUTION} \
-                            --site-url=${SITE_URL} \
-                            --alluredir=allure-results \
-                            -v
-                    '''
-                }
+                    python -m pytest ${TEST_PATH} \
+                        --browser=${BROWSER} \
+                        --browser-version=${BROWSER_VERSION} \
+                        --resolution=${RESOLUTION} \
+                        --site-url=${SITE_URL} \
+                        --alluredir=allure-results \
+                        -v
+                '''
             }
         }
     }

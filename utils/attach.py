@@ -29,7 +29,7 @@ def add_page_source(driver):
 
 
 def add_console_logs(driver):
-    """Прикладывает логи консоли браузера (поддерживается не всеми браузерами)."""
+    """Прикладывает логи консоли браузера."""
     try:
         logs = driver.get_log("browser")
         if logs:
@@ -49,8 +49,6 @@ def add_console_logs(driver):
 def add_video(session_id: str):
     """
     Прикладывает видеозапись сессии из Selenoid.
-    Видео становится доступно только ПОСЛЕ завершения сессии (driver.quit()),
-    поэтому вызывать эту функцию нужно после quit(), передав сохранённый session_id.
     """
     login = os.getenv("SELENOID_LOGIN")
     password = os.getenv("SELENOID_PASSWORD")
