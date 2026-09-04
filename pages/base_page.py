@@ -1,5 +1,6 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import ElementClickInterceptedException
 
 
 class BasePage:
@@ -17,5 +18,10 @@ class BasePage:
 
     def click(self, locator):
         el = self.wait.until(EC.element_to_be_clickable(locator))
-        el.click()
+        try:
+            el.click()
+        except ElementClickInterceptedException:
+            # Карусель/анимация могла перекрыть элемент в момент клика — кликаем через JS
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", el)
+            self.driver.execute_script("arguments[0].click();", el)
         return self

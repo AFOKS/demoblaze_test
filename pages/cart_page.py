@@ -1,5 +1,8 @@
 import allure
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from .base_page import BasePage
 from .checkout_page import CheckoutPage
 
@@ -13,6 +16,12 @@ class CartPage(BasePage):
 
     @allure.step("Получить количество товаров в корзине")
     def get_cart_items_count(self):
+        try:
+            WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located(self.LOCATORS["cart_items"])
+            )
+        except TimeoutException:
+            return 0
         return len(self.driver.find_elements(*self.LOCATORS["cart_items"]))
 
     @allure.step("Получить текст суммы корзины")
@@ -33,7 +42,10 @@ class CartPage(BasePage):
             (By.XPATH, "//tbody[@id='tbodyid']//tr[1]//a[text()='Delete']")
         )
         delete_button.click()
-        self.wait.until(lambda d: True)
+        # Дождаться, пока строка реально исчезнет из DOM
+        WebDriverWait(self.driver, 5).until(
+            EC.staleness_of(delete_button)
+        )
 
     @allure.step("Перейти к оформлению заказа")
     def go_to_checkout(self) -> CheckoutPage:

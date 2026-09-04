@@ -25,7 +25,7 @@ class CheckoutPage(BasePage):
             "card": card, "month": month, "year": year,
         }
         for field, value in values.items():
-            el = self.driver.find_element(*self.LOCATORS[field])
+            el = self.wait.until(EC.visibility_of_element_located(self.LOCATORS[field]))
             el.clear()
             el.send_keys(value)
 
