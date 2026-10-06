@@ -1,22 +1,23 @@
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
 from .base_page import BasePage
 
+
 class Header(BasePage):
-    LOCATORS = {
-        "signup_btn": (By.ID, "signin2"),
-        "login_btn": (By.ID, "login2"),
-        "cart_btn": (By.CSS_SELECTOR, "a[href='#/cart']"),
-        "about_link": (By.CSS_SELECTOR, "a[href='#/about']"),
-    }
+    signup_btn = (By.ID, "signin2")
+    login_btn = (By.ID, "login2")
+    cart_btn = (By.ID, "cartur")
+    about_link = (By.CSS_SELECTOR, "a[data-target='#videoModal']")
 
     def open_signup(self):
-        self.click(self.LOCATORS["signup_btn"])
+        self.wait.until(EC.element_to_be_clickable(self.signup_btn)).click()
 
     def open_login(self):
-        self.click(self.LOCATORS["login_btn"])
+        self.wait.until(EC.element_to_be_clickable(self.login_btn)).click()
 
     def open_cart(self):
-        self.click(self.LOCATORS["cart_btn"])
+        self.wait.until(EC.element_to_be_clickable(self.cart_btn)).click()
 
     def open_about(self):
-        self.click(self.LOCATORS["about_link"])
+        self.wait.until(EC.element_to_be_clickable(self.about_link)).click()
