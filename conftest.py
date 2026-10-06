@@ -1,4 +1,5 @@
 import os
+
 import pytest
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -17,27 +18,34 @@ from utils.attach import (
 load_dotenv()
 
 
+def require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        pytest.fail(f"Не задана переменная окружения {name} (см. .env.example)")
+    return value
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--site-url",
         default="https://www.demoblaze.com/",
-        help="URL тестируемого сайта"
+        help="URL тестируемого сайта",
     )
     parser.addoption(
         "--browser",
         default="chrome",
         choices=("chrome", "firefox"),
-        help="Браузер для запуска тестов"
+        help="Браузер для запуска тестов",
     )
     parser.addoption(
         "--browser-version",
         default="148.0",
-        help="Версия браузера в Selenoid"
+        help="Версия браузера в Selenoid",
     )
     parser.addoption(
         "--resolution",
         default="1920x1080",
-        help="Разрешение экрана браузера в формате WIDTHxHEIGHT"
+        help="Разрешение экрана браузера в формате WIDTHxHEIGHT",
     )
 
 
@@ -62,22 +70,24 @@ def resolution(request):
 
 
 @pytest.fixture(scope="session")
+def valid_username():
+    return require_env("DEMOBLAZE_USERNAME")
+
+
+@pytest.fixture(scope="session")
+def valid_password():
+    return require_env("DEMOBLAZE_PASSWORD")
+
+
+@pytest.fixture(scope="session")
 def selenoid_url():
-    login = os.getenv("SELENOID_LOGIN")
-    password = os.getenv("SELENOID_PASSWORD")
-    selenoid_host = os.getenv("SELENOID_URL")
+    login = require_env("SELENOID_LOGIN")
+    password = require_env("SELENOID_PASSWORD")
+    selenoid_host = require_env("SELENOID_URL")
 
-    if not login:
-        raise ValueError("SELENOID_LOGIN is not set")
-    if not password:
-        raise ValueError("SELENOID_PASSWORD is not set")
-    if not selenoid_host:
-        raise ValueError("SELENOID_URL is not set")
-
-    # Убираем протокол, если он указан в .env
+    # Убираем протокол и /wd/hub, если они случайно указаны в .env
     selenoid_host = selenoid_host.removeprefix("https://")
     selenoid_host = selenoid_host.removeprefix("http://")
-    # Убираем /wd/hub, если он случайно указан в .env
     selenoid_host = selenoid_host.removesuffix("/wd/hub")
     selenoid_host = selenoid_host.rstrip("/")
 
@@ -102,14 +112,12 @@ def driver(browser, browser_version, resolution, selenoid_url, request):
             "sessionTimeout": "60m",
             "screenResolution": f"{resolution}x24",
             "timeZone": "UTC",
-            "labels": {
-                "project": "demoblaze_test",
-            },
+            "labels": {"project": "demoblaze_test"},
             "enableVNC": True,
             "enableVideo": True,
             "enableHAR": False,
             "enableLog": True,
-        }
+        },
     )
 
     remote_driver = webdriver.Remote(
@@ -119,28 +127,27 @@ def driver(browser, browser_version, resolution, selenoid_url, request):
 
     yield remote_driver
 
-    # session_id нужно сохранить ДО quit() — после закрытия сессии он недоступен
+    # session_id нужно сохранить ДО quit(): после закрытия сессии он недоступен
     session_id = remote_driver.session_id
 
-    add_screenshot(remote_driver)
-    add_page_source(remote_driver)
-    add_console_logs(remote_driver)
-
-    remote_driver.quit()
+    # quit() обязан выполниться, даже если вложения не удалось снять,
+    # иначе сессия в Selenoid останется висеть до sessionTimeout
+    try:
+        add_screenshot(remote_driver)
+        add_page_source(remote_driver)
+        add_console_logs(remote_driver)
+    finally:
+        remote_driver.quit()
 
     # Видео в Selenoid финализируется только после закрытия сессии
     add_video(session_id)
 
 
 @pytest.fixture(scope="function")
-def page_objects(driver):
-    return {
-        "header": Header(driver),
-    }
+def header(driver):
+    return Header(driver)
 
 
 @pytest.fixture(scope="function")
 def home_page(driver, site_url):
-    page = HomePage(driver, base_url=site_url)
-    page.open()
-    return page
+    return HomePage(driver, base_url=site_url).open()

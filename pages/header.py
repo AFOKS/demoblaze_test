@@ -21,3 +21,6 @@ class Header(BasePage):
 
     def open_about(self):
         self.wait.until(EC.element_to_be_clickable(self.about_link)).click()
+
+    def is_login_visible(self) -> bool:
+        return self.wait.until(EC.visibility_of_element_located(self.login_btn)).is_displayed()
