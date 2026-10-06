@@ -39,14 +39,38 @@ class HomePage(WebPage):
 
     @allure.step("Открыть форму входа")
     def go_to_login(self) -> LoginPage:
-        self.wait.until(EC.element_to_be_clickable(self.login_btn)).click()
+        login_button = self.wait.until(
+            EC.presence_of_element_located(self.login_btn)
+        )
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            login_button
+        )
+
         login_page = LoginPage(self.driver)
-        self.wait.until(EC.visibility_of_element_located(login_page.username_input))
+
+        self.wait.until(
+            EC.visibility_of_element_located(login_page.username_input)
+        )
+
         return login_page
 
     @allure.step("Открыть форму регистрации")
     def go_to_signup(self) -> SignupPage:
-        self.wait.until(EC.element_to_be_clickable(self.signup_btn)).click()
+        signup_button = self.wait.until(
+            EC.presence_of_element_located(self.signup_btn)
+        )
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            signup_button
+        )
+
         signup_page = SignupPage(self.driver)
-        self.wait.until(EC.visibility_of_element_located(signup_page.username_input))
+
+        self.wait.until(
+            EC.visibility_of_element_located(signup_page.username_input)
+        )
+
         return signup_page
